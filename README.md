@@ -25,7 +25,11 @@ Fill in `.env`:
 
 1. **Supabase → Project Settings → Database → Connection string**
    - `DATABASE_URL` — the **Transaction pooler** URI, port `6543`, keep `?pgbouncer=true&connection_limit=1`
-   - `DIRECT_URL` — the **Direct connection** URI, port `5432` (migrations use this)
+   - `DIRECT_URL` — the **Session pooler** URI, port `5432` (the Prisma CLI uses this for migrations)
+
+   Use the *session pooler*, not the "Direct connection" option: direct connections are IPv6-only
+   unless the project has the paid IPv4 add-on. Percent-encode the password (`#` → `%23`,
+   `^` → `%5E`, `@` → `%40`) or you get `P1013: invalid port number in database URL`.
 2. **Supabase → Project Settings → API** — `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
    Only needed once file uploads go to Supabase Storage; auth does not use them.
    The service-role key bypasses row-level security — server-side only, never send it to the browser.

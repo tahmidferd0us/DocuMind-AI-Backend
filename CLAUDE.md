@@ -141,8 +141,13 @@ token is simply rejected; it does not nuke the whole session family), and a clea
 Prisma 7 moved connection config **out of `schema.prisma`**. Most guidance online (and most model
 priors) describe v5/v6 and will produce code that does not run here.
 
-- **`prisma.config.js` owns the URLs.** `datasource db` in the schema has `provider` only —
+- **`prisma.config.js` owns the CLI's URL.** `datasource db` in the schema has `provider` only —
   adding `url`/`directUrl` there is a hard validation error (P1012).
+- **There is no `directUrl` any more.** The v7 config type is literally
+  `{ url?: string; shadowDatabaseUrl?: string }` (see `@prisma/config/dist/index.d.ts`). Passing
+  `directUrl` is **silently ignored** — no warning, no error. This bit us: the CLI fell back to the
+  pooled URL and migrations died with `prepared statement "s1" already exists`. So
+  `prisma.config.js` sets `datasource.url = env('DIRECT_URL')` on purpose.
 - **A driver adapter is required.** `new PrismaClient()` alone will not connect;
   `config/database.js` passes `new PrismaPg({ connectionString })`.
 - **Generator is `prisma-client-js`,** output to `src/generated/prisma` (gitignored).
@@ -154,9 +159,25 @@ priors) describe v5/v6 and will produce code that does not run here.
 - Do **not** upgrade to the `8.0.0-rc` that `npm i prisma@latest` currently resolves to — the CLI
   and client must stay on matching **7.x** stable.
 
-**Supabase connection strings.** `DATABASE_URL` is the pooled pgbouncer URL (port **6543**,
-`?pgbouncer=true&connection_limit=1`); `DIRECT_URL` is the direct URL (port **5432**) and is what
-migrations use. Getting these backwards produces prepared-statement errors under pgbouncer.
+**Two URLs, two consumers — this is the part that goes wrong.**
+
+| Var | Port | Read by | Why |
+| :--- | :--- | :--- | :--- |
+| `DATABASE_URL` | 6543 transaction pooler | `config/database.js` → `PrismaPg` adapter, at runtime | app queries use unnamed prepared statements, which pgbouncer transaction mode handles |
+| `DIRECT_URL` | 5432 session pooler | `prisma.config.js` → the CLI, for migrate/push/studio | the schema engine uses **named** prepared statements and session-level locks, which transaction mode cannot do |
+
+The running app never reads `prisma.config.js`, and the CLI never reads `config/database.js`. If a
+migration fails with `prepared statement "s1" already exists`, the CLI is going through 6543 —
+check `prisma.config.js`, not `.env`.
+
+Both URLs use the **session/transaction pooler host**, not `db.<ref>.supabase.co`. The true direct
+connection is IPv6-only unless the project buys the IPv4 add-on; the session pooler is IPv4-proxied
+for free and is the right substitute.
+
+**Percent-encode the password.** It goes in a URL, so `#` → `%23`, `^` → `%5E`, `@` → `%40`, etc.
+An unencoded `#` truncates the URL and surfaces as the very unhelpful
+`P1013: invalid port number in database URL`. Encode it programmatically rather than by hand:
+`node -e "console.log(encodeURIComponent('<password>'))"`.
 
 **pgvector caveat for the RAG work.** Prisma has no native `vector` type. When embeddings land,
 enable the extension in Supabase and either map the column as `Unsupported("vector(1536)")` (Prisma
