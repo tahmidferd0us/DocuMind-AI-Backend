@@ -34,9 +34,12 @@ src/
 │   ├── http/              apiResponse.js, asyncHandler.js
 │   ├── middleware/        authGuard, errorHandler, notFound, rateLimiters, validate
 │   └── utils/logger.js
+├── services/
+│   └── nlpClient.js       the ONLY route to the Python NLP sidecar
 └── modules/
     ├── index.js           MODULE REGISTRY — mounts every module
     ├── auth/
+    ├── documents/
     └── health/
 ```
 
@@ -57,7 +60,7 @@ A module is a folder under `src/modules/<name>/` with these files:
 | `<name>.service.js` | all business rules. Throws `AppError`. **Never touches `req`/`res`.** | repository, other services, `AppError` |
 | `<name>.repository.js` | the only file allowed to call `prisma.*` | `config/database.js` |
 | `<name>.validation.js` | Zod schemas keyed `{ body, query, params }` | zod |
-| `<name>.mapper.js` | DB row → API shape (strip `passwordHash` etc.) | — |
+| `<name>.mapper.js` | DB row → API shape (strip `passwordHash`, `extractedText` etc.) | — |
 | `index.js` | `export default { name, basePath, router }` | routes |
 
 Then register it in `src/modules/index.js` — **two lines, nothing else**:
@@ -223,10 +226,35 @@ postinstall needs to run.
 
 ## 9. Roadmap fit
 
-Week 1 of the sprint plan needs: `documents` (upload → Supabase Storage → parse), `summaries`,
-`qa`, `exports`. Each is a module folder plus one registry line.
+**The NLP work does not run in this process.** spaCy, KeyBERT, sumy/LexRank, FAISS and the
+ROUGE/BLEU evaluation are Python-only. They live in the sibling repo `documind-nlp`, a FastAPI
+service on port 8000. Express reaches it **only** through `src/services/nlpClient.js` — never call
+it with a bare axios/fetch from a module.
 
-**The NLP work cannot run in this process.** spaCy, KeyBERT, sumy/LexRank and the ROUGE/BLEU
-evaluation are Python-only with no real Node equivalent. Plan for a small Python FastAPI sidecar
-that Express calls over HTTP, and keep every NLP call behind a single `services/nlpClient.js` so
-the boundary stays swappable. Do not scatter `fetch` calls to it across modules.
+`nlpClient` wraps every call in `unwrap()`, which maps transport failures onto `AppError`:
+`NLP_SERVICE_UNAVAILABLE` (503) when the sidecar is down, `NLP_SERVICE_TIMEOUT` (504), and
+`NLP_SERVICE_ERROR` (502) when FastAPI returns 4xx/5xx. Services therefore never see raw axios
+errors, and the API contract stays consistent.
+
+**Both services must be running, sidecar first.** From `../documind-nlp`:
+
+```bash
+.venv/Scripts/python.exe -m uvicorn src.api.main:app --port 8000
+```
+
+That form works without activating the venv. To activate first, the command is shell-specific:
+`source .venv/Scripts/activate` in Git Bash, `.\.venv\Scripts\Activate.ps1` in PowerShell.
+Pasting a Windows path into Git Bash silently mangles it — bash eats the backslashes.
+
+**Field names come from FastAPI, not from us.** `/api/v1/parse` returns `cleaned_text`,
+`raw_text`, `page_count`, `total_words`, `total_characters` — not `text`/`word_count`. Check the
+real response before mapping; the shapes are not guessable. Export endpoints want the summaries as
+**objects** (`{ summary, ... }`), not strings, or FastAPI answers 422.
+
+### Modules still to build
+`summaries`, `qa` and `exports` — each a module folder plus one registry line, each calling the
+matching `nlpClient` method. `documents` already stores `extractedText`, so they read from the
+database rather than re-parsing.
+
+The original file is not stored yet; only its extracted text. Supabase Storage is configured
+(`config/supabase.js`) but unused — wire it in `documents.service.js` if the original is needed.

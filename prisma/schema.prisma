@@ -12,6 +12,12 @@ enum Role {
   ADMIN
 }
 
+enum DocumentStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
 model User {
   id           String    @id @default(uuid()) @db.Uuid
   email        String    @unique
@@ -23,6 +29,7 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   sessions     Session[]
+  documents    Document[]
 
   @@map("users")
 }
@@ -41,4 +48,24 @@ model Session {
   @@index([userId])
   @@index([expiresAt])
   @@map("sessions")
+}
+
+model Document {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @db.Uuid
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename      String
+  mimeType      String
+  sizeBytes     Int
+  status        DocumentStatus @default(PROCESSING)
+  errorMessage  String?
+  pageCount     Int?
+  wordCount     Int?
+  charCount     Int?
+  extractedText String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([userId, createdAt])
+  @@map("documents")
 }

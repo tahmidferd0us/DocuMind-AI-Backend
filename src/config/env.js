@@ -12,6 +12,9 @@ const schema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32),
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+  NLP_SERVICE_URL: z.url().default('http://localhost:8000'),
+  NLP_TIMEOUT_MS: z.coerce.number().int().positive().default(120000),
+  MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(20 * 1024 * 1024),
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
   COOKIE_DOMAIN: z.string().default('localhost'),
 });
