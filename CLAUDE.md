@@ -272,9 +272,22 @@ file is never re-parsed and **page numbers survive into citations**. The older m
 Documents ingested before the `pages` column existed fall back to a single synthetic page, so their
 citations all read "Page 1". Re-upload to get real page numbers.
 
+### Export assembles from other modules
+`exports.service.js` owns no table. It checks ownership once via `getDocumentText`, then pulls from
+the other stage services — `findSummaryForDocument`, `findEntitySetForDocument`, `getHistory` — and
+posts one payload to `nlpClient.exportReport`. Each of those returns **null / empty rather than
+throwing**, so a report can be produced with only some stages complete.
+
+**The FastAPI exporter's field names are not ours.** It reads `extractive_summary.sentences` (a
+list, not the joined string), `abstractive_summary.summary`, `entities_data.entities_by_type`,
+`keywords_data[].{keyword,score}`, `analytics_data.{word_count,reading_time_min,speaking_time_min}`
+and `qa_history[].{question,answer}`. The `Summary.sentences` column exists purely because the
+exporter needs that array. Check `documind-nlp/src/exporters/` before changing the payload.
+
+There is no `analytics` module: `analytics_data` is derived from the columns already on `Document`.
+
 ### Modules still to build
-`exports` — a module folder plus one registry line, calling `nlpClient.exportReport`. Follow
-`summaries` (simple) or `qa` (stateful) as the template.
+`analytics` — the last one, calling `nlpClient.computeAnalytics`.
 
 The original file is not stored yet; only its extracted text. Supabase Storage is configured
 (`config/supabase.js`) but unused — wire it in `documents.service.js` if the original is needed.

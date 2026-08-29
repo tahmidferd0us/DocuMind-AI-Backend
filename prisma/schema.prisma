@@ -65,6 +65,7 @@ model Document {
   extractedText String?
   pages         Json?
   summary       Summary?
+  entitySet     EntitySet?
   messages      QaMessage[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -78,6 +79,7 @@ model Summary {
   documentId    String   @unique @db.Uuid
   document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   extractive    String
+  sentences     Json?
   abstractive   String
   method        String
   sentenceCount Int
@@ -101,4 +103,17 @@ model QaMessage {
 
   @@index([documentId, createdAt])
   @@map("qa_messages")
+}
+
+model EntitySet {
+  id         String   @id @default(uuid()) @db.Uuid
+  documentId String   @unique @db.Uuid
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  entities   Json
+  keywords   Json
+  totalFound Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("entity_sets")
 }

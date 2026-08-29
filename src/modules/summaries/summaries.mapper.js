@@ -1,6 +1,7 @@
 export const toPublicSummary = (summary) => ({
   documentId: summary.documentId,
   extractive: summary.extractive,
+  sentences: summary.sentences ?? [],
   abstractive: summary.abstractive,
   method: summary.method,
   sentenceCount: summary.sentenceCount,
