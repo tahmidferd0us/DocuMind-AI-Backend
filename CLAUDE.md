@@ -251,10 +251,15 @@ Pasting a Windows path into Git Bash silently mangles it — bash eats the backs
 real response before mapping; the shapes are not guessable. Export endpoints want the summaries as
 **objects** (`{ summary, ... }`), not strings, or FastAPI answers 422.
 
+### Cross-module calls
+`summaries.service.js` imports `getDocumentText` from `documents.service.js` — services calling
+services is the sanctioned pattern, and it keeps ownership checks in one place. Never reach into
+another module's repository.
+
 ### Modules still to build
-`summaries`, `qa` and `exports` — each a module folder plus one registry line, each calling the
-matching `nlpClient` method. `documents` already stores `extractedText`, so they read from the
-database rather than re-parsing.
+`qa` and `exports` — each a module folder plus one registry line, each calling the matching
+`nlpClient` method. `documents` already stores `extractedText`, so they read from the database
+rather than re-parsing. Follow `summaries` as the template.
 
 The original file is not stored yet; only its extracted text. Supabase Storage is configured
 (`config/supabase.js`) but unused — wire it in `documents.service.js` if the original is needed.

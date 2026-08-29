@@ -13,7 +13,7 @@ import { globalLimiter } from './core/middleware/rateLimiters.js';
 export const API_PREFIX = '/api/v1';
 
 const corsOptions = {
-  origin: (origin, callback) => (!origin || env.corsOrigins.includes(origin) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`))),
+  origin: (origin, callback) => callback(null, !origin || env.corsOrigins.includes(origin)),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

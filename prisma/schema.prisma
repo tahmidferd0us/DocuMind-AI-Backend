@@ -63,9 +63,26 @@ model Document {
   wordCount     Int?
   charCount     Int?
   extractedText String?
+  summary       Summary?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
   @@index([userId, createdAt])
   @@map("documents")
+}
+
+model Summary {
+  id            String   @id @default(uuid()) @db.Uuid
+  documentId    String   @unique @db.Uuid
+  document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  extractive    String
+  abstractive   String
+  method        String
+  sentenceCount Int
+  format        String
+  model         String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("summaries")
 }
