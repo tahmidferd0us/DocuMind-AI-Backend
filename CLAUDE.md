@@ -256,10 +256,25 @@ real response before mapping; the shapes are not guessable. Export endpoints wan
 services is the sanctioned pattern, and it keeps ownership checks in one place. Never reach into
 another module's repository.
 
+### Retrieval is stateful — and the state lives in Python
+The FAISS vector store in `documind-nlp` is **in-memory and per-process**. Restarting the sidecar
+drops every indexed document, so a query for a document indexed before the restart fails with
+`Document session '<id>' not found in vector store.`
+
+`qa.service.js` handles this by **querying first and indexing only on that specific miss**, then
+retrying once. Do not eagerly re-index before every question — embedding is the slow step.
+
+Indexing uses `nlpClient.indexTextForRag(docId, pages)` against `/api/v1/rag/index-text`, a JSON
+endpoint added for this. It takes the `pages` JSON already stored on the document at ingest, so the
+file is never re-parsed and **page numbers survive into citations**. The older multipart
+`/api/v1/rag/index` re-parses a file and is unused.
+
+Documents ingested before the `pages` column existed fall back to a single synthetic page, so their
+citations all read "Page 1". Re-upload to get real page numbers.
+
 ### Modules still to build
-`qa` and `exports` — each a module folder plus one registry line, each calling the matching
-`nlpClient` method. `documents` already stores `extractedText`, so they read from the database
-rather than re-parsing. Follow `summaries` as the template.
+`exports` — a module folder plus one registry line, calling `nlpClient.exportReport`. Follow
+`summaries` (simple) or `qa` (stateful) as the template.
 
 The original file is not stored yet; only its extracted text. Supabase Storage is configured
 (`config/supabase.js`) but unused — wire it in `documents.service.js` if the original is needed.

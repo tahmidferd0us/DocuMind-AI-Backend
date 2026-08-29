@@ -35,6 +35,7 @@ export const ingestDocument = async (userId, file) => {
       pageCount: parsed.page_count ?? null,
       wordCount: parsed.total_words ?? text.trim().split(/\s+/).length,
       charCount: parsed.total_characters ?? text.length,
+      pages: (parsed.pages ?? []).map((page) => ({ page_number: page.page_number, cleaned_text: page.cleaned_text })),
       errorMessage: null,
     });
     return toPublicDocument(updated);

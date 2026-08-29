@@ -54,6 +54,8 @@ export const nlpClient = {
     return unwrap(client.post('/api/v1/rag/index', form, { headers: form.getHeaders() }));
   },
 
+  indexTextForRag: (docId, pages) => unwrap(client.post('/api/v1/rag/index-text', { doc_id: docId, pages })),
+
   queryRag: (docId, question, topK = 4, chatHistory = []) =>
     unwrap(client.post('/api/v1/rag/query', { doc_id: docId, question, top_k: topK, chat_history: chatHistory })),
 

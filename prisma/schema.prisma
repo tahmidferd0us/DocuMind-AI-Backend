@@ -63,7 +63,9 @@ model Document {
   wordCount     Int?
   charCount     Int?
   extractedText String?
+  pages         Json?
   summary       Summary?
+  messages      QaMessage[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -85,4 +87,18 @@ model Summary {
   updatedAt     DateTime @updatedAt
 
   @@map("summaries")
+}
+
+model QaMessage {
+  id         String   @id @default(uuid()) @db.Uuid
+  documentId String   @db.Uuid
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  question   String
+  answer     String
+  sources    Json?
+  model      String
+  createdAt  DateTime @default(now())
+
+  @@index([documentId, createdAt])
+  @@map("qa_messages")
 }
