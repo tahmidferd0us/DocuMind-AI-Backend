@@ -9,7 +9,11 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "seed": "node src/scripts/seed.js"
+  },
+  "prisma": {
+    "seed": "node src/scripts/seed.js"
   },
   "keywords": [],
   "type": "module",

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import adminModule from './admin/index.js';
 import authModule from './auth/index.js';
 import documentsModule from './documents/index.js';
 import entitiesModule from './entities/index.js';
@@ -7,7 +8,7 @@ import healthModule from './health/index.js';
 import qaModule from './qa/index.js';
 import summariesModule from './summaries/index.js';
 
-export const modules = [healthModule, authModule, documentsModule, summariesModule, qaModule, entitiesModule, exportsModule];
+export const modules = [healthModule, authModule, adminModule, documentsModule, summariesModule, qaModule, entitiesModule, exportsModule];
 
 export const buildModuleRouter = () => {
   const router = Router();
