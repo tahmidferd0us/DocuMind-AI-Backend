@@ -51,6 +51,16 @@ export const getProfile = async (userId) => {
   return toPublicUser(user);
 };
 
+export const updateProfile = async (userId, { fullName }) => {
+  const user = await repository.findUserById(userId);
+  if (!user) throw AppError.notFound('User not found');
+  const updated = await repository.updateUser(userId, {
+    fullName: fullName !== undefined ? fullName.trim() || null : user.fullName,
+  });
+  return toPublicUser(updated);
+};
+
+
 export const changePassword = async (userId, { currentPassword, newPassword }) => {
   const user = await repository.findUserById(userId);
   if (!user) throw AppError.notFound('User not found');

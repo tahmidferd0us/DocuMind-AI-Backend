@@ -45,7 +45,13 @@ export const logout = asyncHandler(async (req, res) => {
 
 export const me = asyncHandler(async (req, res) => sendSuccess(res, { data: await service.getProfile(req.user.id) }));
 
+export const updateProfile = asyncHandler(async (req, res) => {
+  const updated = await service.updateProfile(req.user.id, req.body);
+  sendSuccess(res, { data: updated, message: 'Profile updated successfully' });
+});
+
 export const changePassword = asyncHandler(async (req, res) => {
+
   await service.changePassword(req.user.id, req.body);
   res.clearCookie(REFRESH_COOKIE, { ...cookieOptions(), maxAge: undefined });
   sendSuccess(res, { message: 'Password changed successfully, please log in again' });

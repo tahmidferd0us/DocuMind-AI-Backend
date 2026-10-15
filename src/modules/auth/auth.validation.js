@@ -16,3 +16,10 @@ export const loginSchema = { body: z.object({ email, password: z.string().min(1,
 export const changePasswordSchema = {
   body: z.object({ currentPassword: z.string().min(1, 'Current password is required'), newPassword: password }),
 };
+
+export const updateProfileSchema = {
+  body: z.object({
+    fullName: z.string().trim().min(2, 'Full name must be at least 2 characters').max(80).optional(),
+  }),
+};
+

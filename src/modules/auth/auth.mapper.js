@@ -4,5 +4,8 @@ export const toPublicUser = (user) => ({
   fullName: user.fullName,
   role: user.role,
   isActive: user.isActive,
+  lastLoginAt: user.lastLoginAt,
   createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
 });
+
