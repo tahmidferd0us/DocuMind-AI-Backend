@@ -47,8 +47,14 @@ export const ingestDocument = async (userId, file) => {
   }
 };
 
-export const listDocuments = async (userId, { page, limit }) => {
-  const [items, total] = await repository.listDocuments({ userId, skip: (page - 1) * limit, take: limit });
+export const listDocuments = async (userId, { page, limit, search, status }) => {
+  const [items, total] = await repository.listDocuments({
+    userId,
+    skip: (page - 1) * limit,
+    take: limit,
+    search,
+    status,
+  });
   return { items: items.map(toPublicDocument), total };
 };
 

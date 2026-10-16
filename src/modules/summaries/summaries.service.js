@@ -41,3 +41,14 @@ export const generateSummary = async (userId, documentId, options) => {
 
   return toPublicSummary(summary);
 };
+
+export const evaluateSummary = async (userId, documentId, { reference, candidateType = 'abstractive' }) => {
+  await getDocumentText(userId, documentId);
+  const summary = await repository.findSummaryByDocument(documentId);
+  if (!summary) throw AppError.notFound('No summary exists to evaluate. Generate a summary first.');
+
+  const candidate = candidateType === 'extractive' ? summary.extractive : (summary.abstractive || summary.extractive);
+  if (!candidate || !candidate.trim()) throw AppError.badRequest('The selected summary text is empty');
+
+  return nlpClient.evaluate(reference, candidate);
+};

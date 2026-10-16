@@ -10,10 +10,16 @@ export const findDocumentById = (id, userId) => prisma.document.findFirst({ wher
 
 export const findDocumentSummary = (id, userId) => prisma.document.findFirst({ where: { id, userId }, select: LIST_FIELDS });
 
-export const listDocuments = ({ userId, skip, take }) =>
-  prisma.$transaction([
-    prisma.document.findMany({ where: { userId }, select: LIST_FIELDS, orderBy: { createdAt: 'desc' }, skip, take }),
-    prisma.document.count({ where: { userId } }),
+export const listDocuments = ({ userId, skip, take, search, status }) => {
+  const where = {
+    userId,
+    ...(status ? { status } : {}),
+    ...(search ? { filename: { contains: search, mode: 'insensitive' } } : {}),
+  };
+  return prisma.$transaction([
+    prisma.document.findMany({ where, select: LIST_FIELDS, orderBy: { createdAt: 'desc' }, skip, take }),
+    prisma.document.count({ where }),
   ]);
+};
 
 export const deleteDocument = (id, userId) => prisma.document.deleteMany({ where: { id, userId } });

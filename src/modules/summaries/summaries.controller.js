@@ -9,3 +9,7 @@ export const detail = asyncHandler(async (req, res) =>
 export const generate = asyncHandler(async (req, res) =>
   sendSuccess(res, { data: await service.generateSummary(req.user.id, req.validated.params.documentId, req.body), message: 'Summary generated' }),
 );
+
+export const evaluate = asyncHandler(async (req, res) =>
+  sendSuccess(res, { data: await service.evaluateSummary(req.user.id, req.validated.params.documentId, req.body), message: 'Summary evaluated' }),
+);

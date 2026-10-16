@@ -8,8 +8,8 @@ export const upload = asyncHandler(async (req, res) => {
 });
 
 export const list = asyncHandler(async (req, res) => {
-  const { page, limit } = req.validated.query;
-  const { items, total } = await service.listDocuments(req.user.id, { page, limit });
+  const { page, limit, search, status } = req.validated.query;
+  const { items, total } = await service.listDocuments(req.user.id, { page, limit, search, status });
   sendPaginated(res, { items, page, limit, total });
 });
 

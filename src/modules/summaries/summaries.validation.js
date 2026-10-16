@@ -11,3 +11,11 @@ export const generateSummarySchema = {
     length: z.enum(['short', 'standard', 'detailed']).default('standard'),
   }),
 };
+
+export const evaluateSummarySchema = {
+  params: z.object({ documentId: z.uuid('Invalid document id') }),
+  body: z.object({
+    reference: z.string().trim().min(5, 'Reference text must be at least 5 characters'),
+    candidateType: z.enum(['extractive', 'abstractive']).default('abstractive'),
+  }),
+};
