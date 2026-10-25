@@ -9,6 +9,7 @@ const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.txt'];
 
 export const assertSupportedFile = (file) => {
   if (!file) throw AppError.badRequest('No file was uploaded');
+  if (file.size === 0) throw AppError.badRequest('Uploaded file is empty (0 bytes)');
   const extension = path.extname(file.originalname).toLowerCase();
   if (!ALLOWED_EXTENSIONS.includes(extension)) throw AppError.badRequest(`Only ${ALLOWED_EXTENSIONS.join(', ')} files are supported`);
 };

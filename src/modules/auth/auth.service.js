@@ -61,6 +61,10 @@ export const updateProfile = async (userId, { fullName }) => {
 };
 
 
+export const revokeUserSessions = async (userId) => {
+  await repository.revokeAllUserSessions(userId);
+};
+
 export const changePassword = async (userId, { currentPassword, newPassword }) => {
   const user = await repository.findUserById(userId);
   if (!user) throw AppError.notFound('User not found');

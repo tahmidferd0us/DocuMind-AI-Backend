@@ -3,6 +3,7 @@ import { AppError } from '../../core/errors/AppError.js';
 import { env } from '../../config/env.js';
 import { prisma } from '../../config/database.js';
 import * as repository from './admin.repository.js';
+import * as authService from '../auth/auth.service.js';
 
 export const getAnalytics = async () => {
   const stats = await repository.getPlatformStats();
@@ -65,7 +66,18 @@ export const updateUserStatus = async (currentUserId, targetUserId, { isActive }
     throw AppError.notFound('User not found.');
   }
 
-  return repository.updateUser(targetUserId, { isActive });
+  if (user.role === 'ADMIN' && !isActive) {
+    const adminCount = await repository.countActiveAdmins();
+    if (adminCount <= 1) {
+      throw AppError.badRequest('Cannot deactivate administrator: at least one active administrator is required.');
+    }
+  }
+
+  const updated = await repository.updateUser(targetUserId, { isActive });
+  if (!isActive) {
+    await authService.revokeUserSessions(targetUserId);
+  }
+  return updated;
 };
 
 export const updateUserRole = async (currentUserId, targetUserId, { role }) => {
@@ -74,14 +86,16 @@ export const updateUserRole = async (currentUserId, targetUserId, { role }) => {
     throw AppError.notFound('User not found.');
   }
 
-  if (currentUserId === targetUserId && role !== 'ADMIN') {
+  if (user.role === 'ADMIN' && role !== 'ADMIN') {
     const adminCount = await repository.countActiveAdmins();
     if (adminCount <= 1) {
-      throw AppError.badRequest('Cannot demote yourself: at least one active administrator is required.');
+      throw AppError.badRequest('Cannot demote administrator: at least one active administrator is required.');
     }
   }
 
-  return repository.updateUser(targetUserId, { role });
+  const updated = await repository.updateUser(targetUserId, { role });
+  await authService.revokeUserSessions(targetUserId);
+  return updated;
 };
 
 export const listDocuments = async (params) => {
