@@ -4,6 +4,7 @@ import { logger } from '../../core/utils/logger.js';
 import { nlpClient } from '../../services/nlpClient.js';
 import * as repository from './documents.repository.js';
 import { toPublicDocument } from './documents.mapper.js';
+import { incrementDocumentCount } from '../subscriptions/subscriptions.repository.js';
 
 const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.txt'];
 
@@ -39,6 +40,13 @@ export const ingestDocument = async (userId, file) => {
       pages: (parsed.pages ?? []).map((page) => ({ page_number: page.page_number, cleaned_text: page.cleaned_text })),
       errorMessage: null,
     });
+
+    try {
+      await incrementDocumentCount(userId, undefined, 1, file.size);
+    } catch (quotaError) {
+      logger.warn('Failed to increment document quota', { userId, error: quotaError?.message });
+    }
+
     return toPublicDocument(updated);
   } catch (error) {
     logger.error('Document ingestion failed', { documentId: document.id, message: error?.message });

@@ -7,9 +7,10 @@ import entitiesModule from './entities/index.js';
 import exportsModule from './exports/index.js';
 import healthModule from './health/index.js';
 import qaModule from './qa/index.js';
+import subscriptionsModule from './subscriptions/index.js';
 import summariesModule from './summaries/index.js';
 
-export const modules = [healthModule, authModule, adminModule, documentsModule, summariesModule, qaModule, entitiesModule, analyticsModule, exportsModule];
+export const modules = [healthModule, authModule, adminModule, documentsModule, summariesModule, qaModule, entitiesModule, analyticsModule, exportsModule, subscriptionsModule];
 
 export const buildModuleRouter = () => {
   const router = Router();

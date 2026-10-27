@@ -15,6 +15,8 @@ export class AppError extends Error {
   static notFound(message = 'Resource not found', details = null) { return new AppError(message, 404, 'NOT_FOUND', details); }
   static conflict(message = 'Resource already exists', details = null) { return new AppError(message, 409, 'CONFLICT', details); }
   static validation(message = 'Validation failed', details = null) { return new AppError(message, 422, 'VALIDATION_ERROR', details); }
+  static quotaExceeded(message = 'Quota exceeded', details = null) { return new AppError(message, 402, 'QUOTA_EXCEEDED', details); }
+  static upgradeRequired(message = 'Upgrade required', details = null) { return new AppError(message, 402, 'UPGRADE_REQUIRED', details); }
   static tooManyRequests(message = 'Too many requests', details = null) { return new AppError(message, 429, 'TOO_MANY_REQUESTS', details); }
   static internal(message = 'Something went wrong', details = null) { return new AppError(message, 500, 'INTERNAL_ERROR', details); }
 }

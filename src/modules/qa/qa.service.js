@@ -4,6 +4,7 @@ import { nlpClient } from '../../services/nlpClient.js';
 import { getDocumentText } from '../documents/documents.service.js';
 import * as repository from './qa.repository.js';
 import { toPublicMessage } from './qa.mapper.js';
+import { incrementQaCount } from '../subscriptions/subscriptions.repository.js';
 
 const HISTORY_TURNS = 6;
 
@@ -56,6 +57,12 @@ export const ask = async (userId, documentId, { question, topK }) => {
     sources: result.sources ?? [],
     model: result.model_used ?? 'unknown',
   });
+
+  try {
+    await incrementQaCount(userId);
+  } catch (quotaError) {
+    logger.warn('Failed to increment QA quota', { userId, error: quotaError?.message });
+  }
 
   return toPublicMessage(message);
 };

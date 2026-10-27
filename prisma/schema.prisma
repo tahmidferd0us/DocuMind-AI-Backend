@@ -12,6 +12,21 @@ enum Role {
   ADMIN
 }
 
+enum PlanTier {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
 enum DocumentStatus {
   PROCESSING
   READY
@@ -19,17 +34,19 @@ enum DocumentStatus {
 }
 
 model User {
-  id           String    @id @default(uuid()) @db.Uuid
-  email        String    @unique
+  id           String        @id @default(uuid()) @db.Uuid
+  email        String        @unique
   passwordHash String
   fullName     String?
-  role         Role      @default(USER)
-  isActive     Boolean   @default(true)
+  role         Role          @default(USER)
+  isActive     Boolean       @default(true)
   lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   sessions     Session[]
   documents    Document[]
+  subscription Subscription?
+  usageQuotas  UsageQuota[]
 
   @@map("users")
 }
@@ -48,6 +65,40 @@ model Session {
   @@index([userId])
   @@index([expiresAt])
   @@map("sessions")
+}
+
+model Subscription {
+  id                   String             @id @default(uuid()) @db.Uuid
+  userId               String             @unique @db.Uuid
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tier                 PlanTier           @default(FREE)
+  status               SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  currentPeriodStart   DateTime           @default(now())
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@map("subscriptions")
+}
+
+model UsageQuota {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @db.Uuid
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodMonth      String
+  documentsCount   Int      @default(0)
+  qaQuestionsCount Int      @default(0)
+  summariesCount   Int      @default(0)
+  storageBytesUsed BigInt   @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([userId, periodMonth])
+  @@index([userId])
+  @@map("usage_quotas")
 }
 
 model Document {
