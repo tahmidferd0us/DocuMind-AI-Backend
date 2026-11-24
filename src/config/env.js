@@ -17,11 +17,17 @@ const schema = z.object({
   MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(20 * 1024 * 1024),
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
   COOKIE_DOMAIN: z.string().default('localhost'),
+  FRONTEND_URL: z.url().default('http://localhost:5173'),
+  RESEND_API_KEY: z.string().optional(),
+  AUTH_EMAIL_FROM: z.string().default('DocuMind AI <onboarding@resend.dev>'),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_PRICE_ID_STARTER: z.string().optional(),
   STRIPE_PRICE_ID_PRO: z.string().optional(),
   STRIPE_PRICE_ID_ENTERPRISE: z.string().optional(),
+}).refine((config) => config.NODE_ENV !== 'production' || Boolean(config.RESEND_API_KEY), {
+  path: ['RESEND_API_KEY'],
+  message: 'RESEND_API_KEY is required in production to deliver account security emails',
 });
 
 const parsed = schema.safeParse(process.env);

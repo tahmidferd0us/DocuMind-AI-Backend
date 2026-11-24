@@ -12,6 +12,9 @@ export const registerSchema = {
 };
 
 export const loginSchema = { body: z.object({ email, password: z.string().min(1, 'Password is required') }) };
+export const emailOnlySchema = { body: z.object({ email }) };
+export const tokenSchema = { body: z.object({ token: z.string().min(1, 'Token is required') }) };
+export const resetPasswordSchema = { body: z.object({ token: z.string().min(1, 'Token is required'), password: password.regex(/[a-z]/, 'Password must contain a lowercase letter').regex(/[A-Z]/, 'Password must contain an uppercase letter').regex(/\d/, 'Password must contain a number') }) };
 
 export const changePasswordSchema = {
   body: z.object({ currentPassword: z.string().min(1, 'Current password is required'), newPassword: password }),

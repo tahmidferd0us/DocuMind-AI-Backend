@@ -54,12 +54,13 @@ export const startTestServer = async () => {
 export const createTestUser = async ({ email, role = 'USER', isActive = true, fullName = 'Test User' }) => {
   const user = await prisma.user.upsert({
     where: { email },
-    update: { role, isActive, fullName },
+    update: { role, isActive, fullName, emailVerifiedAt: new Date() },
     create: {
       email,
       fullName,
       role,
       isActive,
+      emailVerifiedAt: new Date(),
       passwordHash: '$2a$12$e8Y6lP6xY4J1a/0jN9r5xOC/qB4nO6ZfO3uXgJt2a/H0cR4vF1N4W', // precomputed hash for "Password123!"
     },
   });

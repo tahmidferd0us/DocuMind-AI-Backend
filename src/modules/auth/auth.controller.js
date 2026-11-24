@@ -31,6 +31,26 @@ export const login = asyncHandler(async (req, res) => {
   sendSuccess(res, { data: { user, accessToken }, message: 'Logged in successfully' });
 });
 
+export const verifyEmail = asyncHandler(async (req, res) => {
+  await service.verifyEmail(req.body);
+  sendSuccess(res, { message: 'Email verified successfully. You can now log in.' });
+});
+
+export const resendVerification = asyncHandler(async (req, res) => {
+  await service.resendVerification(req.body);
+  sendSuccess(res, { message: 'If the account requires verification, an email has been sent.' });
+});
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  await service.requestPasswordReset(req.body);
+  sendSuccess(res, { message: 'If an account exists for that email, a password reset link has been sent.' });
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  await service.resetPassword(req.body);
+  sendSuccess(res, { message: 'Password reset successfully. Please log in.' });
+});
+
 export const refresh = asyncHandler(async (req, res) => {
   const { user, accessToken, refreshToken } = await service.refresh(req.cookies?.[REFRESH_COOKIE], requestContext(req));
   setRefreshCookie(res, refreshToken);

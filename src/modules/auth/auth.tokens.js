@@ -18,5 +18,6 @@ export const verifyAccessToken = (token) => jwt.verify(token, env.JWT_ACCESS_SEC
 export const generateRefreshToken = () => crypto.randomBytes(48).toString('hex');
 
 export const hashRefreshToken = (token) => crypto.createHmac('sha256', env.JWT_REFRESH_SECRET).update(token).digest('hex');
+export const hashAuthToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
 export const refreshTokenExpiry = () => new Date(Date.now() + durationToMs(env.JWT_REFRESH_EXPIRES_IN));
