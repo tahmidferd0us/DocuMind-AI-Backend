@@ -4,8 +4,10 @@ import * as service from './documents.service.js';
 
 export const upload = asyncHandler(async (req, res) => {
   const document = await service.ingestDocument(req.user.id, req.file);
-  sendCreated(res, { data: document, message: 'Document uploaded and parsed' });
+  sendCreated(res, { data: document, message: 'Document uploaded and queued for processing' });
 });
+
+export const retry = asyncHandler(async (req, res) => sendSuccess(res, { data: await service.retryDocument(req.user.id, req.validated.params.id), message: 'Document queued for retry' }));
 
 export const list = asyncHandler(async (req, res) => {
   const { page, limit, search, status } = req.validated.query;

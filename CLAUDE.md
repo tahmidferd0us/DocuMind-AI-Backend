@@ -257,9 +257,10 @@ services is the sanctioned pattern, and it keeps ownership checks in one place. 
 another module's repository.
 
 ### Retrieval is stateful — and the state lives in Python
-The FAISS vector store in `documind-nlp` is **in-memory and per-process**. Restarting the sidecar
-drops every indexed document, so a query for a document indexed before the restart fails with
-`Document session '<id>' not found in vector store.`
+The FAISS vector store in `documind-nlp` is cached in memory and persisted per document under
+`RAG_INDEX_DIR` (default `documind-nlp/data/rag_indexes`). Mount that directory on durable storage in
+deployments. Each index stores its chunk metadata, including page numbers, alongside the FAISS file.
+Indexes load on demand so unused documents do not consume RAM after a restart.
 
 `qa.service.js` handles this by **querying first and indexing only on that specific miss**, then
 retrying once. Do not eagerly re-index before every question — embedding is the slow step.
@@ -271,6 +272,15 @@ file is never re-parsed and **page numbers survive into citations**. The older m
 
 Documents ingested before the `pages` column existed fall back to a single synthetic page, so their
 citations all read "Page 1". Re-upload to get real page numbers.
+
+### Document processing jobs
+Uploads persist the source bytes and a `PROCESSING` document row, then return immediately. The
+database-backed `documents.worker.js` claims pending rows, updates visible progress, retries
+failures up to three times, and marks exhausted jobs `FAILED` with an error. Stale processing leases
+are recovered after a restart. Owners can retry failed documents at
+`POST /api/v1/documents/:id/retry`. Keep processing status, progress, step, attempt count and error
+fields in the public document mapper. Source bytes are cleared after successful parsing and retained
+after failure so retry remains possible.
 
 ### Export assembles from other modules
 `exports.service.js` owns no table. It checks ownership once via `getDocumentText`, then pulls from

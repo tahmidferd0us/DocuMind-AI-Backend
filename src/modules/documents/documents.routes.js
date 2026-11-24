@@ -14,4 +14,5 @@ documentRoutes.post('/', singleDocument, requireEntitlement('upload'), controlle
 documentRoutes.get('/', validate(listDocumentsSchema), controller.list);
 documentRoutes.get('/:id', validate(documentIdSchema), controller.detail);
 documentRoutes.get('/:id/text', validate(documentIdSchema), controller.text);
+documentRoutes.post('/:id/retry', validate(documentIdSchema), controller.retry);
 documentRoutes.delete('/:id', validate(documentIdSchema), controller.remove);

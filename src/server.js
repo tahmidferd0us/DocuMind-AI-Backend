@@ -3,6 +3,7 @@ import { env } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { logger } from './core/utils/logger.js';
 import { startHousekeepingJobs } from './core/utils/cron.js';
+import { startDocumentWorker } from './modules/documents/documents.worker.js';
 
 const start = async () => {
   try {
@@ -14,10 +15,12 @@ const start = async () => {
 
   const server = createApp().listen(env.PORT, () => logger.info(`DocuMind AI API listening on http://localhost:${env.PORT}${API_PREFIX}`));
   const housekeeping = startHousekeepingJobs();
+  const documentWorker = startDocumentWorker();
 
   const shutdown = async (signal) => {
     logger.info(`${signal} received, shutting down`);
     housekeeping.stop();
+    documentWorker.stop();
     server.close(async () => { await disconnectDatabase(); process.exit(0); });
     setTimeout(() => process.exit(1), 10_000).unref();
   };

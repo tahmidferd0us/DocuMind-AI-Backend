@@ -24,36 +24,61 @@ export const ingestDocument = async (userId, file) => {
     mimeType: file.mimetype,
     sizeBytes: file.size,
     status: 'PROCESSING',
+    processingStep: 'Queued for processing',
+    progress: 0,
+    sourceFile: file.buffer,
   });
+  return toPublicDocument(document);
+};
 
+const MAX_PROCESSING_ATTEMPTS = 3;
+
+export const processDocument = async (documentId) => {
+  const claimed = await repository.claimDocument(documentId);
+  if (!claimed.count) return false;
+  const document = await repository.findDocumentForProcessing(documentId);
   try {
-    const parsed = await nlpClient.parseDocument(file.buffer, file.originalname);
+    const parsed = await nlpClient.parseDocument(document.sourceFile, document.filename);
     const text = parsed.cleaned_text ?? parsed.raw_text ?? '';
     if (!text.trim()) throw AppError.badRequest('No readable text could be extracted from this document');
 
-    const updated = await repository.updateDocument(document.id, {
-      status: 'READY',
-      extractedText: text,
-      pageCount: parsed.page_count ?? null,
+    await repository.updateDocument(document.id, { processingStep: 'Saving extracted pages', progress: 75 });
+    const ready = await repository.updateDocument(document.id, {
+      status: 'READY', processingStep: 'Complete', progress: 100, processingStartedAt: null, sourceFile: null,
+      extractedText: text, pageCount: parsed.page_count ?? null,
       wordCount: parsed.total_words ?? text.trim().split(/\s+/).length,
       charCount: parsed.total_characters ?? text.length,
       pages: (parsed.pages ?? []).map((page) => ({ page_number: page.page_number, cleaned_text: page.cleaned_text })),
       errorMessage: null,
     });
-
     try {
-      await incrementDocumentCount(userId, undefined, 1, file.size);
+      await incrementDocumentCount(document.userId, undefined, 1, document.sizeBytes);
     } catch (quotaError) {
-      logger.warn('Failed to increment document quota', { userId, error: quotaError?.message });
+      logger.warn('Failed to increment document quota', { userId: document.userId, error: quotaError?.message });
     }
-
-    return toPublicDocument(updated);
+    logger.info('Document processing completed', { documentId });
+    return ready;
   } catch (error) {
-    logger.error('Document ingestion failed', { documentId: document.id, message: error?.message });
-    const failed = await repository.updateDocument(document.id, { status: 'FAILED', errorMessage: error?.message?.slice(0, 500) ?? 'Ingestion failed' });
-    if (error instanceof AppError) throw error;
-    throw AppError.internal('Could not process this document', { documentId: failed.id });
+    const exhausted = document.attemptCount >= MAX_PROCESSING_ATTEMPTS;
+    logger.error('Document processing attempt failed', { documentId, attempt: document.attemptCount, message: error?.message });
+    await repository.updateDocument(documentId, {
+      status: exhausted ? 'FAILED' : 'PROCESSING',
+      processingStep: exhausted ? 'Failed' : 'Retry scheduled',
+      progress: 0,
+      processingStartedAt: null,
+      errorMessage: error?.message?.slice(0, 500) ?? 'Processing failed',
+    });
+    return false;
   }
+};
+
+export const retryDocument = async (userId, id) => {
+  const document = await repository.findDocumentForRetry(id, userId);
+  if (!document) throw AppError.notFound('Document not found');
+  if (document.status !== 'FAILED') throw AppError.conflict('Only failed documents can be retried');
+  if (!document.sourceFile) throw AppError.badRequest('The original upload is unavailable. Upload this document again to process it.');
+  const updated = await repository.updateDocument(id, { status: 'PROCESSING', processingStep: 'Queued for retry', progress: 0, attemptCount: 0, processingStartedAt: null, errorMessage: null });
+  return toPublicDocument(updated);
 };
 
 export const listDocuments = async (userId, { page, limit, search, status }) => {

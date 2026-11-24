@@ -110,6 +110,11 @@ model Document {
   sizeBytes     Int
   status        DocumentStatus @default(PROCESSING)
   errorMessage  String?
+  processingStep String?
+  progress      Int            @default(0)
+  attemptCount  Int            @default(0)
+  processingStartedAt DateTime?
+  sourceFile    Bytes?
   pageCount     Int?
   wordCount     Int?
   charCount     Int?
