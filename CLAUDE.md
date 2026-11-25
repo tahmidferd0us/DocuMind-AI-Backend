@@ -251,6 +251,11 @@ Pasting a Windows path into Git Bash silently mangles it — bash eats the backs
 real response before mapping; the shapes are not guessable. Export endpoints want the summaries as
 **objects** (`{ summary, ... }`), not strings, or FastAPI answers 422.
 
+PDF parsing preserves one entry per physical page. Pages that require local Tesseract OCR include
+`ocr_used` and `ocr_language` metadata; preserve these fields in the stored `pages` JSON so citations
+can be checked against OCR-derived text. Missing OCR support is returned as a specific recoverable
+processing message and must not include filesystem paths or raw document content.
+
 ### Cross-module calls
 `summaries.service.js` imports `getDocumentText` from `documents.service.js` — services calling
 services is the sanctioned pattern, and it keeps ownership checks in one place. Never reach into

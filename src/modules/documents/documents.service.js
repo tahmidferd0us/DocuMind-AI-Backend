@@ -71,7 +71,7 @@ export const processDocument = async (documentId) => {
       extractedText: text, pageCount: parsed.page_count ?? null,
       wordCount: parsed.total_words ?? text.trim().split(/\s+/).length,
       charCount: parsed.total_characters ?? text.length,
-      pages: (parsed.pages ?? []).map((page) => ({ page_number: page.page_number, cleaned_text: page.cleaned_text })),
+      pages: (parsed.pages ?? []).map((page) => ({ page_number: page.page_number, cleaned_text: page.cleaned_text, ocr_used: Boolean(page.ocr_used), ocr_language: page.ocr_language ?? null })),
       errorMessage: null,
     });
     try {
@@ -89,7 +89,7 @@ export const processDocument = async (documentId) => {
       processingStep: exhausted ? 'Failed' : 'Retry scheduled',
       progress: 0,
       processingStartedAt: null,
-      errorMessage: error?.statusCode === 503 || error?.code === 'NLP_SERVICE_UNAVAILABLE' ? 'The analysis service is temporarily unavailable. Retry will be available after this job finishes.' : error?.statusCode === 504 ? 'Analysis timed out. Try again, or upload a smaller document.' : error?.statusCode === 502 ? 'The analysis service could not process this document. Check the format and retry.' : error?.statusCode === 400 ? error.message : 'Document processing failed. Retry later or upload the document again.',
+      errorMessage: error?.code === 'OCR_UNAVAILABLE' ? error.message : error?.code === 'OCR_PROCESSING_ERROR' ? error.message : error?.statusCode === 503 || error?.code === 'NLP_SERVICE_UNAVAILABLE' ? 'The analysis service is temporarily unavailable. Retry will be available after this job finishes.' : error?.statusCode === 504 ? 'Analysis timed out. Try again, or upload a smaller document.' : error?.statusCode === 502 ? 'The analysis service could not process this document. Check the format and retry.' : error?.statusCode === 400 ? error.message : 'Document processing failed. Retry later or upload the document again.',
     });
     return false;
   }

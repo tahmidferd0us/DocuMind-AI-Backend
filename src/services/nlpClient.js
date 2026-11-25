@@ -10,7 +10,12 @@ const unwrap = async (request) => {
     const response = await request;
     return response.data?.data ?? response.data;
   } catch (error) {
-    if (error.response) throw new AppError('The analysis service could not process this request. Please retry later.', 502, 'NLP_SERVICE_ERROR');
+    if (error.response) {
+      const detailCode = error.response.data?.detail?.code;
+      if (detailCode === 'OCR_UNAVAILABLE') throw new AppError('OCR is not configured on the analysis service. Ask the administrator to install Tesseract and its English language data, then retry.', 503, 'OCR_UNAVAILABLE');
+      if (detailCode === 'OCR_PROCESSING_ERROR') throw new AppError('OCR could not read one or more scanned pages. Try a clearer PDF or contact the administrator.', 422, 'OCR_PROCESSING_ERROR');
+      throw new AppError('The analysis service could not process this request. Please retry later.', 502, 'NLP_SERVICE_ERROR');
+    }
     if (error.code === 'ECONNABORTED') throw new AppError('The NLP service timed out', 504, 'NLP_SERVICE_TIMEOUT');
     throw new AppError('The analysis service is temporarily unavailable. Please retry shortly.', 503, 'NLP_SERVICE_UNAVAILABLE');
   }
