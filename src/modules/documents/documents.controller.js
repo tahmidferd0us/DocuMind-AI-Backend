@@ -10,16 +10,20 @@ export const upload = asyncHandler(async (req, res) => {
 export const retry = asyncHandler(async (req, res) => sendSuccess(res, { data: await service.retryDocument(req.user.id, req.validated.params.id), message: 'Document queued for retry' }));
 
 export const list = asyncHandler(async (req, res) => {
-  const { page, limit, search, status } = req.validated.query;
-  const { items, total } = await service.listDocuments(req.user.id, { page, limit, search, status });
+  const { page, limit, search, status, tag, folder, sort } = req.validated.query;
+  const { items, total } = await service.listDocuments(req.user.id, { page, limit, search, status, tag, folder, sort });
   sendPaginated(res, { items, page, limit, total });
 });
+
+export const update = asyncHandler(async (req, res) => sendSuccess(res, { data: await service.updateDocument(req.user.id, req.validated.params.id, req.body), message: 'Document updated' }));
+
+export const bulk = asyncHandler(async (req, res) => sendSuccess(res, { data: await service.bulkDocuments(req.user.id, req.body), message: 'Bulk action completed' }));
 
 export const detail = asyncHandler(async (req, res) => sendSuccess(res, { data: await service.getDocument(req.user.id, req.validated.params.id) }));
 
 export const text = asyncHandler(async (req, res) => {
   const document = await service.getDocumentText(req.user.id, req.validated.params.id);
-  sendSuccess(res, { data: { id: document.id, filename: document.filename, text: document.extractedText } });
+  sendSuccess(res, { data: { id: document.id, filename: document.filename, text: document.extractedText, pages: Array.isArray(document.pages) ? document.pages : [] } });
 });
 
 export const remove = asyncHandler(async (req, res) => {

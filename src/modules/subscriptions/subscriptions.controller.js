@@ -23,18 +23,12 @@ export const portal = asyncHandler(async (req, res) => {
 });
 
 export const webhook = asyncHandler(async (req, res) => {
-  let event = req.body;
-
   const sig = req.headers['stripe-signature'];
-  if (env.STRIPE_WEBHOOK_SECRET && sig && env.STRIPE_SECRET_KEY) {
-    try {
-      const stripe = new Stripe(env.STRIPE_SECRET_KEY);
-      const rawBody = req.rawBody || req.body;
-      event = stripe.webhooks.constructEvent(rawBody, sig, env.STRIPE_WEBHOOK_SECRET);
-    } catch (err) {
-      throw AppError.badRequest(`Webhook signature verification failed: ${err.message}`);
-    }
-  }
+  if (!env.STRIPE_WEBHOOK_SECRET || !env.STRIPE_SECRET_KEY) throw AppError.unavailable('Stripe webhook processing is not configured.');
+  if (!sig || !req.rawBody) throw AppError.badRequest('A valid Stripe signature is required.');
+  let event;
+  try { event = new Stripe(env.STRIPE_SECRET_KEY).webhooks.constructEvent(req.rawBody, sig, env.STRIPE_WEBHOOK_SECRET); }
+  catch { throw AppError.badRequest('Webhook signature verification failed.'); }
 
   const result = await service.handleStripeWebhook(event);
   sendSuccess(res, { data: result, message: 'Webhook processed' });

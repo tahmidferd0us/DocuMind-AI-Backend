@@ -24,6 +24,7 @@ export const generateSummary = async (userId, documentId, options) => {
     extractiveMethod: options.method,
     abstractiveFormat: options.format,
     abstractiveLength: options.length,
+    focusTopic: options.focusTopic || null,
   });
 
   const extractive = result.extractive?.summary?.trim();

@@ -124,6 +124,10 @@ model Document {
   userId        String         @db.Uuid
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   filename      String
+  displayName   String?
+  folder        String?
+  tags          String[]       @default([])
+  storagePath   String?
   mimeType      String
   sizeBytes     Int
   status        DocumentStatus @default(PROCESSING)
@@ -146,6 +150,18 @@ model Document {
 
   @@index([userId, createdAt])
   @@map("documents")
+}
+
+model StripeEvent {
+  id          String   @id
+  type        String
+  resourceId  String?
+  stripeCreated Int
+  processedAt DateTime @default(now())
+
+  @@index([resourceId, stripeCreated])
+
+  @@map("stripe_events")
 }
 
 model Summary {

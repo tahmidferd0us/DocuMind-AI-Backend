@@ -17,7 +17,7 @@ export const startDocumentWorker = () => {
       const next = await repository.findNextQueuedDocument();
       if (next) await processDocument(next.id);
     } catch (error) {
-      logger.error('Document worker poll failed', { message: error?.message });
+      logger.error('Document worker poll failed', { code: error?.code ?? 'WORKER_ERROR' });
     } finally {
       running = false;
     }

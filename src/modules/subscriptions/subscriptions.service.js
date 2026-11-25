@@ -14,6 +14,7 @@ const getStripe = () => {
   }
   return stripeClient;
 };
+const isStripeBillingConfigured = () => Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET);
 
 const mapStripeStatus = (status) => {
   switch ((status || '').toLowerCase()) {
@@ -39,6 +40,7 @@ export const getSubscriptionStatus = async (userId) => {
 
   return {
     tier: activeTier,
+    billingMode: isStripeBillingConfigured() ? 'stripe' : 'development_simulation',
     status: subscription?.status || 'ACTIVE',
     currentPeriodStart: subscription?.currentPeriodStart || null,
     currentPeriodEnd: subscription?.currentPeriodEnd || null,
@@ -79,6 +81,7 @@ export const createCheckoutSession = async (userId, { tier = 'PRO', successUrl, 
 
   const tierLimits = getTierLimits(targetTier);
   const existingSub = await repository.findSubscriptionByUserId(userId);
+  if (env.STRIPE_SECRET_KEY && !env.STRIPE_WEBHOOK_SECRET) throw AppError.unavailable('Stripe checkout is not enabled until its webhook signing secret is configured. No payment was taken.');
   const stripe = getStripe();
 
   if (stripe) {
@@ -132,17 +135,17 @@ export const createCheckoutSession = async (userId, { tier = 'PRO', successUrl, 
       cancel_url: cancelUrl || `${env.corsOrigins[0]}/profile/billing?canceled=true`,
     });
 
-    return { sessionId: session.id, url: session.url };
+    return { sessionId: session.id, url: session.url, mode: 'stripe' };
   }
 
-  // Simulated fallback when Stripe secret key is not configured (e.g. testing or local dev)
+  if (env.isProduction) throw AppError.unavailable('Checkout is unavailable because Stripe is not configured. No payment was taken.');
   const mockSessionId = `cs_test_${crypto.randomUUID()}`;
-  const mockUrl = `${successUrl || `${env.corsOrigins[0]}/profile/billing`}?session_id=${mockSessionId}&tier=${targetTier}&mock=true`;
-  return { sessionId: mockSessionId, url: mockUrl };
+  return { sessionId: mockSessionId, url: null, mode: 'development_simulation', message: 'Development simulation only. No payment was taken and your plan was not changed.' };
 };
 
 export const createCustomerPortalSession = async (userId, returnUrl) => {
   const existingSub = await repository.findSubscriptionByUserId(userId);
+  if (env.STRIPE_SECRET_KEY && !env.STRIPE_WEBHOOK_SECRET) throw AppError.unavailable('Billing management is unavailable until the Stripe webhook signing secret is configured.');
   const stripe = getStripe();
 
   if (stripe && existingSub?.stripeCustomerId) {
@@ -153,10 +156,19 @@ export const createCustomerPortalSession = async (userId, returnUrl) => {
     return { url: portalSession.url };
   }
 
-  return { url: returnUrl || `${env.corsOrigins[0]}/profile/billing` };
+  throw AppError.unavailable('Billing management is unavailable because Stripe is not configured. No billing changes were made.');
 };
 
 export const handleStripeWebhook = async (event) => {
+  if (await repository.findStripeEvent(event.id)) return { received: true, duplicate: true };
+  const resourceId = event.data?.object?.subscription ?? event.data?.object?.id;
+  if (resourceId && (event.type.startsWith('customer.subscription.') || event.type === 'checkout.session.completed')) {
+    const latest = await repository.latestStripeEventForResource(resourceId);
+    if (latest && latest.stripeCreated > (event.created ?? 0)) {
+      await repository.recordStripeEvent(event);
+      return { received: true, stale: true };
+    }
+  }
   logger.info('Processing Stripe webhook event', { type: event?.type, id: event?.id });
 
   switch (event.type) {
@@ -182,6 +194,7 @@ export const handleStripeWebhook = async (event) => {
       break;
     }
 
+    case 'customer.subscription.created':
     case 'customer.subscription.updated': {
       const sub = event.data.object;
       const stripeSubscriptionId = sub.id;
@@ -231,5 +244,8 @@ export const handleStripeWebhook = async (event) => {
       logger.info(`Unhandled stripe event type: ${event.type}`);
   }
 
+  try { await repository.recordStripeEvent(event); } catch (error) {
+    if (error?.code !== 'P2002') throw error;
+  }
   return { received: true };
 };

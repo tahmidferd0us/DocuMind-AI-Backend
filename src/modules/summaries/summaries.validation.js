@@ -9,6 +9,7 @@ export const generateSummarySchema = {
     method: z.enum(['lexrank', 'lsa', 'luhn']).default('lexrank'),
     format: z.enum(['paragraph', 'bullets']).default('paragraph'),
     length: z.enum(['short', 'standard', 'detailed']).default('standard'),
+    focusTopic: z.string().trim().max(120).optional(),
   }),
 };
 

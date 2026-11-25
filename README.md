@@ -31,7 +31,9 @@ Fill in `.env`:
    unless the project has the paid IPv4 add-on. Percent-encode the password (`#` → `%23`,
    `^` → `%5E`, `@` → `%40`) or you get `P1013: invalid port number in database URL`.
 2. **Supabase → Project Settings → API** — `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
-   Only needed once file uploads go to Supabase Storage; auth does not use them.
+   Configure `SUPABASE_STORAGE_BUCKET` (default `documents`) and create a private Storage bucket.
+   Auth does not use these credentials. Without Storage configuration, local uploads use temporary
+   database storage instead.
    The service-role key bypasses row-level security — server-side only, never send it to the browser.
 3. Generate two different JWT secrets (each must be at least 32 characters):
 
@@ -91,6 +93,9 @@ Base path `/api/v1`. All responses use `{ success, message, data }` or
 | :--- | :--- | :--- | :--- |
 | GET | `/health` | — | liveness |
 | GET | `/health/ready` | — | readiness incl. database |
+| GET | `/documents` | Bearer | Search, filter by status/tag/folder and sort owned documents |
+| PATCH | `/documents/:id` | Bearer | Rename or organize an owned document |
+| PATCH | `/documents/bulk` | Bearer | Move, tag or delete up to 100 owned documents |
 | POST | `/auth/register` | — | create account, returns access token + sets refresh cookie |
 | POST | `/auth/login` | — | sign in |
 | POST | `/auth/refresh` | cookie | rotate refresh token, new access token |
@@ -122,3 +127,8 @@ See [CLAUDE.md](CLAUDE.md) §3.
 - Prisma is pinned to **7.x**. `npm i prisma@latest` currently resolves to an `8.0.0-rc`
   prerelease — do not take it, and keep the CLI and `@prisma/client` on the same version.
 - `src/generated/` is gitignored; run `npm run prisma:generate` after cloning.
+
+For real subscriptions, configure Stripe API and webhook signing secrets. Local development without
+Stripe uses a clearly labeled checkout simulation that never takes payment or changes a plan.
+Production checkout remains unavailable until Stripe is configured. Apply the newest Prisma
+migration before starting this version.

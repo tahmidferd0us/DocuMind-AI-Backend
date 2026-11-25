@@ -18,5 +18,6 @@ export class AppError extends Error {
   static quotaExceeded(message = 'Quota exceeded', details = null) { return new AppError(message, 402, 'QUOTA_EXCEEDED', details); }
   static upgradeRequired(message = 'Upgrade required', details = null) { return new AppError(message, 402, 'UPGRADE_REQUIRED', details); }
   static tooManyRequests(message = 'Too many requests', details = null) { return new AppError(message, 429, 'TOO_MANY_REQUESTS', details); }
+  static unavailable(message = 'Service temporarily unavailable', details = null) { return new AppError(message, 503, 'SERVICE_UNAVAILABLE', details); }
   static internal(message = 'Something went wrong', details = null) { return new AppError(message, 500, 'INTERNAL_ERROR', details); }
 }

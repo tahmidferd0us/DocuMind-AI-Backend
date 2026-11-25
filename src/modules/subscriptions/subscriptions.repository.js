@@ -28,6 +28,10 @@ export const updateSubscriptionByStripeSubscriptionId = (stripeSubscriptionId, d
     data,
   });
 
+export const findStripeEvent = (id) => prisma.stripeEvent.findUnique({ where: { id } });
+export const latestStripeEventForResource = (resourceId) => prisma.stripeEvent.findFirst({ where: { resourceId }, orderBy: { stripeCreated: 'desc' } });
+export const recordStripeEvent = (event) => prisma.stripeEvent.create({ data: { id: event.id, type: event.type, resourceId: event.data?.object?.subscription ?? event.data?.object?.id ?? null, stripeCreated: event.created ?? 0 } });
+
 export const getMonthlyUsage = async (userId, periodMonth = getCurrentPeriodMonth()) => {
   const quota = await prisma.usageQuota.findUnique({
     where: { userId_periodMonth: { userId, periodMonth } },

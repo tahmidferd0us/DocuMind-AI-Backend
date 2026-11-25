@@ -10,9 +10,9 @@ const unwrap = async (request) => {
     const response = await request;
     return response.data?.data ?? response.data;
   } catch (error) {
-    if (error.response) throw new AppError(error.response.data?.detail ?? 'The NLP service rejected the request', 502, 'NLP_SERVICE_ERROR');
+    if (error.response) throw new AppError('The analysis service could not process this request. Please retry later.', 502, 'NLP_SERVICE_ERROR');
     if (error.code === 'ECONNABORTED') throw new AppError('The NLP service timed out', 504, 'NLP_SERVICE_TIMEOUT');
-    throw new AppError(`The NLP service is unreachable at ${env.NLP_SERVICE_URL}`, 503, 'NLP_SERVICE_UNAVAILABLE');
+    throw new AppError('The analysis service is temporarily unavailable. Please retry shortly.', 503, 'NLP_SERVICE_UNAVAILABLE');
   }
 };
 
@@ -58,6 +58,8 @@ export const nlpClient = {
 
   queryRag: (docId, question, topK = 4, chatHistory = []) =>
     unwrap(client.post('/api/v1/rag/query', { doc_id: docId, question, top_k: topK, chat_history: chatHistory })),
+
+  deleteRagIndex: (docId) => unwrap(client.delete(`/api/v1/rag/${docId}`)),
 
   exportReport: async (format, payload) => {
     const response = await client.post(`/api/v1/export/${format}`, payload, { responseType: 'arraybuffer' });

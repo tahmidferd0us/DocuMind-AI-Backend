@@ -1,6 +1,9 @@
 export const toPublicDocument = (document) => ({
   id: document.id,
   filename: document.filename,
+  displayName: document.displayName ?? document.filename,
+  folder: document.folder ?? null,
+  tags: document.tags ?? [],
   mimeType: document.mimeType,
   sizeBytes: document.sizeBytes,
   status: document.status,

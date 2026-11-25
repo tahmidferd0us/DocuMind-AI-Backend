@@ -299,5 +299,18 @@ There is no `analytics` module: `analytics_data` is derived from the columns alr
 ### Modules still to build
 `analytics` — the last one, calling `nlpClient.computeAnalytics`.
 
-The original file is not stored yet; only its extracted text. Supabase Storage is configured
-(`config/supabase.js`) but unused — wire it in `documents.service.js` if the original is needed.
+Original uploads use the configured private Supabase Storage bucket (`SUPABASE_STORAGE_BUCKET`,
+default `documents`) when Storage credentials are present. Object paths are prefixed with the
+authenticated user id and random document id; only the server service role accesses the bucket.
+Without Storage configuration, uploads temporarily use the database `sourceFile` field for local
+development. Deleting an owned document removes the original, extracted text, pages, summaries,
+entities, Q&A and their citations through cascading relations; it also adjusts current-month usage
+when a ready document is removed. Its persisted NLP retrieval index is deleted before the row; if
+the NLP service is unavailable, deletion stops and the document remains. Failed deletions leave the
+database row intact. Keep this behavior in sync if adding other derived tables or external indexes.
+
+Stripe webhooks require `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`; unsigned requests are
+rejected. Processed event ids and resource timestamps are stored in `stripe_events` to suppress
+replays and stale subscription updates. In development without Stripe, checkout returns an
+explicit simulation response and never changes a plan. Production checkout is unavailable until
+Stripe is configured.
