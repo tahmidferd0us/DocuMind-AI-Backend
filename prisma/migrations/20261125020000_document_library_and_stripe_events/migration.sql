@@ -1,4 +1,4 @@
-﻿ALTER TABLE "documents" ADD COLUMN "displayName" TEXT, ADD COLUMN "folder" TEXT, ADD COLUMN "tags" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[], ADD COLUMN "storagePath" TEXT;
+ALTER TABLE "documents" ADD COLUMN "displayName" TEXT, ADD COLUMN "folder" TEXT, ADD COLUMN "tags" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[], ADD COLUMN "storagePath" TEXT;
 CREATE TABLE "stripe_events" (
     "id" TEXT NOT NULL,
     "type" TEXT NOT NULL,
